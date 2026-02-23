@@ -1,6 +1,6 @@
 # botTelegramAsync 🤖
 
-Bot de Telegram **asíncrono** construido con [python-telegram-bot v21](https://python-telegram-bot.org/), listo para desplegar en **Render** desde GitHub.
+Bot de Telegram **asíncrono** construido con [python-telegram-bot v21](https://python-telegram-bot.org/), desplegado en **Render** vía GitHub.
 
 ---
 
@@ -8,54 +8,43 @@ Bot de Telegram **asíncrono** construido con [python-telegram-bot v21](https://
 
 ```
 botTelegramAsync/
-├── bot.py                   # Punto de entrada principal
+├── bot.py                   # Punto de entrada + servidor HTTP health check
 ├── config.py                # Carga de variables de entorno
 ├── requirements.txt         # Dependencias Python
+├── .python-version          # Fija Python 3.12 (requerido por Render)
+├── render.yaml              # Blueprint de Render
 ├── .env.example             # Plantilla de variables de entorno
 ├── .gitignore
-├── render.yaml              # Blueprint de Render (deploy automático)
 ├── handlers/
 │   ├── __init__.py
 │   ├── general.py           # /start  /help  /ping
 │   └── messages.py          # /echo, texto libre, comandos desconocidos
 └── .github/
     └── workflows/
-        └── deploy.yml       # CI/CD con GitHub Actions
+        └── deploy.yml       # CI: lint en cada push/PR
 ```
 
 ---
 
 ## ⚙️ Configuración local
 
-### 1. Clonar el repositorio
-
 ```bash
+# 1. Clonar
 git clone https://github.com/TU_USUARIO/botTelegramAsync.git
 cd botTelegramAsync
-```
 
-### 2. Crear entorno virtual e instalar dependencias
-
-```bash
+# 2. Entorno virtual
 python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux / macOS
-source .venv/bin/activate
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Linux / macOS
 
 pip install -r requirements.txt
-```
 
-### 3. Configurar variables de entorno
-
-```bash
+# 3. Variables de entorno
 cp .env.example .env
 # Edita .env y añade tu BOT_TOKEN
-```
 
-### 4. Ejecutar el bot
-
-```bash
+# 4. Ejecutar
 python bot.py
 ```
 
@@ -63,11 +52,11 @@ python bot.py
 
 ## 🔑 Variables de entorno
 
-| Variable        | Requerida | Descripción                         |
-|-----------------|-----------|-------------------------------------|
-| `BOT_TOKEN`     | ✅         | Token de @BotFather                 |
-| `ADMIN_CHAT_ID` | ❌         | Chat ID del administrador (opcional)|
-| `LOG_LEVEL`     | ❌         | `DEBUG` / `INFO` (por defecto INFO) |
+| Variable        | Requerida | Descripción                          |
+|-----------------|-----------|--------------------------------------|
+| `BOT_TOKEN`     | ✅        | Token de @BotFather                  |
+| `ADMIN_CHAT_ID` | ❌        | Chat ID del administrador (opcional) |
+| `LOG_LEVEL`     | ❌        | `DEBUG` / `INFO` (default: `INFO`)   |
 
 > ⚠️ **Nunca** subas tu `.env` a GitHub. Está incluido en `.gitignore`.
 
@@ -75,53 +64,73 @@ python bot.py
 
 ## 🚀 Despliegue en Render
 
-El archivo `render.yaml` configura automáticamente el servicio como un **Worker** (proceso continuo, sin HTTP), ideal para bots Telegram con polling.
+### Requisitos previos
+- Cuenta en [render.com](https://render.com)
+- Repositorio subido a GitHub con todos los archivos (incluido `.python-version`)
 
 ### Pasos
 
-1. **Sube el código a GitHub** (si aún no lo has hecho):
-   ```bash
-   git add .
-   git commit -m "feat: bot telegram async"
-   git push origin main
-   ```
+**1. Sube el código a GitHub:**
+```bash
+git add .
+git commit -m "feat: bot telegram async"
+git push origin main
+```
 
-2. Ve a [render.com](https://render.com) → **New → Blueprint**
+**2. Crea el servicio en Render:**
+- Ve a [render.com](https://render.com) → **New → Blueprint**
+- Conecta tu repositorio de GitHub y selecciona la rama `main`
+- Render detecta el `render.yaml` y crea el servicio como **Web Service**
 
-3. Conecta tu repositorio de GitHub y selecciona la rama `main`.
+**3. Configura la variable de entorno `BOT_TOKEN`:**
+- En tu servicio → **Environment → Edit**
+- Agrega:
+  - **Key:** `BOT_TOKEN`
+  - **Value:** tu token de @BotFather
+- Guarda los cambios → Render redespliega automáticamente
 
-4. Render detectará el `render.yaml` y creará el servicio automáticamente.
+**4. Verifica en los logs:**
+```
+Using Python version 3.12.x
+Build successful 🎉
+Health check HTTP escuchando en puerto 10000
+Bot en ejecución.
+```
 
-5. En la configuración del servicio, añade la variable de entorno:
-   - **Key:** `BOT_TOKEN`
-   - **Value:** tu token de @BotFather
+> 💡 Cada `push` a `main` redespliega el bot automáticamente.
 
-6. Haz clic en **Deploy** — ¡listo! 🎉
+### ⚠️ Notas importantes
 
-> 💡 A partir de ahora, cada `push` a `main` desplegará automáticamente una nueva versión.
+| Tema | Detalle |
+|------|---------|
+| **Python** | Fijado en **3.12** via `.python-version`. Render instala 3.14 por defecto, que rompe `asyncio`. |
+| **Tipo de servicio** | Se usa **Web Service** (no Background Worker) porque el plan free no incluye workers. El bot incluye un servidor HTTP mínimo en `/health` para satisfacer el health check de Render. |
+| **BOT_TOKEN** | Debe configurarse **manualmente** en el dashboard de Render. El `.env` local nunca se sube a GitHub. |
+
+---
 
 ## ⚙️ CI con GitHub Actions
 
-El workflow `.github/workflows/deploy.yml` hace lint y verificación de sintaxis en cada push/PR. Render gestiona el deploy de forma independiente vía webhook de GitHub.
+El workflow `.github/workflows/deploy.yml` verifica la sintaxis de todos los archivos Python en cada push/PR. Render gestiona el deploy de forma independiente vía webhook de GitHub.
 
 ---
 
 ## 📋 Comandos disponibles
 
-| Comando  | Descripción                        |
-|----------|------------------------------------|
-| `/start` | Mensaje de bienvenida              |
-| `/help`  | Muestra la lista de comandos       |
-| `/ping`  | Comprueba que el bot responde      |
-| `/echo`  | Repite el texto enviado            |
+| Comando  | Descripción                   |
+|----------|-------------------------------|
+| `/start` | Mensaje de bienvenida         |
+| `/help`  | Muestra la lista de comandos  |
+| `/ping`  | Comprueba que el bot responde |
+| `/echo`  | Repite el texto enviado       |
 
 ---
 
 ## 🛠️ Agregar nuevos comandos
 
-1. Crea (o edita) un archivo en `handlers/`.
-2. Define una función `async def mi_comando(update, context)`.
-3. Regístrala en `bot.py`:
+1. Crea o edita un archivo en `handlers/`
+2. Define `async def mi_comando(update, context)`
+3. Regístralo en `bot.py`:
 
 ```python
 from handlers.mi_modulo import mi_comando
