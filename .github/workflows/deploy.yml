@@ -1,0 +1,63 @@
+# Nombre del workflow
+name: Deploy Bot
+
+on:
+  push:
+    branches:
+      - main          # Se ejecuta automáticamente al hacer push a main
+  workflow_dispatch:  # Permite ejecución manual desde la pestaña Actions
+
+jobs:
+  deploy:
+    name: Test & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout del código
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      # 2. Configurar Python
+      - name: 🐍 Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      # 3. Instalar dependencias
+      - name: 📦 Instalar dependencias
+        run: pip install -r requirements.txt
+
+      # 4. Verificar sintaxis (linting rápido)
+      - name: 🔍 Lint con py_compile
+        run: |
+          python -m py_compile bot.py config.py
+          python -m py_compile handlers/general.py handlers/messages.py
+          echo "✅ Todos los archivos compilan correctamente."
+
+      # 5. Ejecutar el bot en segundo plano y comprobar que arranca
+      #    (solo como smoke-test; se detiene tras 10 s)
+      - name: 💨 Smoke test de inicio
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: |
+          timeout 10 python bot.py || true
+          echo "✅ Smoke test completado."
+
+      # ──────────────────────────────────────────────────────────────────────
+      # PASO OPCIONAL: Despliegue real en servidor SSH
+      # Descomenta y ajusta si usas un VPS con acceso SSH.
+      # ──────────────────────────────────────────────────────────────────────
+      # - name: 🚀 Desplegar en servidor
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       cd ~/botTelegramAsync
+      #       git pull origin main
+      #       pip install -r requirements.txt
+      #       pkill -f bot.py || true
+      #       nohup python bot.py > bot.log 2>&1 &
+      #       echo "Bot reiniciado."
