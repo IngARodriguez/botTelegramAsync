@@ -2,21 +2,22 @@
 # Documentación: https://render.com/docs/blueprint-spec
 
 services:
-  - type: worker          # "worker" = proceso en segundo plano sin HTTP (perfecto para bots)
+  - type: web              # "web" disponible en el plan FREE de Render
     name: bot-telegram-async
     runtime: python
-    region: oregon         # Cambia a "frankfurt" si quieres servidor en Europa
-    plan: free             # Plan gratuito
+    region: oregon
+    plan: free
 
-    # Instala dependencias antes de arrancar
     buildCommand: pip install -r requirements.txt
-
-    # Comando de inicio
     startCommand: python bot.py
 
-    # Variables de entorno (el valor real se configura en el dashboard de Render)
+    # Render requiere un health check HTTP en servicios web
+    healthCheckPath: /health
+
     envVars:
+      - key: PORT
+        value: 10000
       - key: BOT_TOKEN
-        sync: false        # sync:false → Render pedirá el valor manualmente (no se guarda en el repo)
+        sync: false        # Render pedirá el valor manualmente
       - key: LOG_LEVEL
         value: INFO
