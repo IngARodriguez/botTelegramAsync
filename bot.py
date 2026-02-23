@@ -18,12 +18,14 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from telegram import BotCommand
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
     filters,
 )
 
 import config
+from handlers.buttons import button_handler
 from handlers.general import help_command, ping, start
 from handlers.messages import echo, handle_text, unknown_command
 
@@ -96,6 +98,9 @@ def main() -> None:
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("ping", ping))
     app.add_handler(CommandHandler("echo", echo))
+
+    # Botones inline del menú /help
+    app.add_handler(CallbackQueryHandler(button_handler, pattern="^cmd_"))
 
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)

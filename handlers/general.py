@@ -3,7 +3,7 @@ Handlers de comandos generales: /start, /help, /ping
 """
 
 import logging
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 logger = logging.getLogger(__name__)
@@ -20,15 +20,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Muestra la lista de comandos disponibles."""
-    text = (
-        "📋 <b>Comandos disponibles</b>\n\n"
-        "/start – Mensaje de bienvenida\n"
-        "/help  – Esta ayuda\n"
-        "/ping  – Comprueba que el bot está vivo\n"
-        "/echo  – Repite el texto que escribas\n"
+    """Muestra los comandos disponibles como botones inline."""
+    keyboard = [
+        [
+            InlineKeyboardButton("🏓 Ping",   callback_data="cmd_ping"),
+            InlineKeyboardButton("🔁 Echo",   callback_data="cmd_echo"),
+        ],
+        [
+            InlineKeyboardButton("👋 Start",  callback_data="cmd_start"),
+            InlineKeyboardButton("❓ Ayuda",  callback_data="cmd_help"),
+        ],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "📋 *Comandos disponibles* — pulsa uno para usarlo:",
+        parse_mode="Markdown",
+        reply_markup=reply_markup,
     )
-    await update.message.reply_html(text)
 
 
 async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
