@@ -1,6 +1,6 @@
 # botTelegramAsync 🤖
 
-Bot de Telegram **asíncrono** construido con [python-telegram-bot v21](https://python-telegram-bot.org/), listo para desplegar desde GitHub Actions.
+Bot de Telegram **asíncrono** construido con [python-telegram-bot v21](https://python-telegram-bot.org/), listo para desplegar en **Render** desde GitHub.
 
 ---
 
@@ -13,6 +13,7 @@ botTelegramAsync/
 ├── requirements.txt         # Dependencias Python
 ├── .env.example             # Plantilla de variables de entorno
 ├── .gitignore
+├── render.yaml              # Blueprint de Render (deploy automático)
 ├── handlers/
 │   ├── __init__.py
 │   ├── general.py           # /start  /help  /ping
@@ -72,20 +73,36 @@ python bot.py
 
 ---
 
-## 🚀 Despliegue con GitHub Actions
+## 🚀 Despliegue en Render
 
-El workflow `.github/workflows/deploy.yml` se ejecuta automáticamente al hacer **push a `main`** y realiza:
+El archivo `render.yaml` configura automáticamente el servicio como un **Worker** (proceso continuo, sin HTTP), ideal para bots Telegram con polling.
 
-1. **Lint** – Verifica que todos los archivos Python compilan.
-2. **Smoke test** – Arranca el bot 10 segundos para detectar errores de inicio.
-3. **Deploy SSH** *(opcional, descomenta en el workflow)* – Conecta a tu servidor por SSH y reinicia el bot.
+### Pasos
 
-### Configurar el Secret `BOT_TOKEN` en GitHub
+1. **Sube el código a GitHub** (si aún no lo has hecho):
+   ```bash
+   git add .
+   git commit -m "feat: bot telegram async"
+   git push origin main
+   ```
 
-1. Ve a tu repositorio → **Settings** → **Secrets and variables** → **Actions**
-2. Haz clic en **New repository secret**
-3. Nombre: `BOT_TOKEN` → Valor: tu token de @BotFather
-4. *(Opcional)* Agrega `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` si usas deploy SSH.
+2. Ve a [render.com](https://render.com) → **New → Blueprint**
+
+3. Conecta tu repositorio de GitHub y selecciona la rama `main`.
+
+4. Render detectará el `render.yaml` y creará el servicio automáticamente.
+
+5. En la configuración del servicio, añade la variable de entorno:
+   - **Key:** `BOT_TOKEN`
+   - **Value:** tu token de @BotFather
+
+6. Haz clic en **Deploy** — ¡listo! 🎉
+
+> 💡 A partir de ahora, cada `push` a `main` desplegará automáticamente una nueva versión.
+
+## ⚙️ CI con GitHub Actions
+
+El workflow `.github/workflows/deploy.yml` hace lint y verificación de sintaxis en cada push/PR. Render gestiona el deploy de forma independiente vía webhook de GitHub.
 
 ---
 

@@ -1,0 +1,22 @@
+# render.yaml – Render Blueprint
+# Documentación: https://render.com/docs/blueprint-spec
+
+services:
+  - type: worker          # "worker" = proceso en segundo plano sin HTTP (perfecto para bots)
+    name: bot-telegram-async
+    runtime: python
+    region: oregon         # Cambia a "frankfurt" si quieres servidor en Europa
+    plan: free             # Plan gratuito
+
+    # Instala dependencias antes de arrancar
+    buildCommand: pip install -r requirements.txt
+
+    # Comando de inicio
+    startCommand: python bot.py
+
+    # Variables de entorno (el valor real se configura en el dashboard de Render)
+    envVars:
+      - key: BOT_TOKEN
+        sync: false        # sync:false → Render pedirá el valor manualmente (no se guarda en el repo)
+      - key: LOG_LEVEL
+        value: INFO
